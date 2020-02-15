@@ -1,5 +1,5 @@
 # playbook: install wordpress
-Pre -requests files create on your local machine
+Pre -requests files create on your local machine and I hope you are connected with ansible host machhine and client server.
 * vhost.tmpl
 * wp-config.php.tmpl
 ### # cat vhost.tmpl
