@@ -210,3 +210,10 @@ Vim vhostcreation.yml
 ```
 # ansible-playbook -i hosts vhostcreation.yml
 ```
+```
+# ansible-playbook -i hosts mysql.yml
+
+```
+```
+# ansible-playbook -i hosts wp-install.yml
+```
