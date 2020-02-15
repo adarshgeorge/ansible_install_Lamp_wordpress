@@ -54,7 +54,7 @@ require_once ABSPATH . 'wp-settings.php';
 ```
 
 ## First playbook:  Install httpd and add Virtual Host
-
+### # vim vhostcreation.yml
 ```
 Vim vhostcreation.yml
 ---
@@ -94,4 +94,119 @@ Vim vhostcreation.yml
           state: restarted
 ```
 
+## Second playbook: Install MySQL
+### # vim mysql.yml
+```
+---
+  - name: "Installing MySQL to Remote Host"
+    hosts: all
+    become: yes
+    vars:
+      - mysql_pswd: mysql1232
+        db_user: wp-user
+        db_name: wp-db
+        db_password: wp123h
+        domain: adamz.com
+    tasks:
+      - name: "installing MySQL"
+        yum:
+          name:
+          - mariadb-server
+          - MySQL-python
 
+
+          state: present
+      - name: "starting"
+        service:
+          name: mariadb
+          state: started
+          enabled: yes
+      - name: Resetting mysql password"
+        ignore_errors: true
+        mysql_user:
+          login_user: "root"
+          login_password: ""
+          user: "root"
+          password: "{{ mysql_pswd }}"
+
+      - name: "Removing anonymous user"
+        mysql_user:
+          login_user: root
+          login_password: "{{ mysql_pswd }}"
+          user: ""
+          state: absent
+          host_all: true
+
+      - name: "Creating database"
+        mysql_db:
+          login_user: "root"
+          login_password: "{{ mysql_pswd }}"
+          name: "{{ db_name }}"
+          state: present
+
+      - name: "Adding wordpress User to MySQL"
+        mysql_user:
+          login_user: "root"
+          login_password: "{{ mysql_pswd }}"
+          name: "{{ db_user }}"
+          password: "{{ db_password }}"
+          host: "localhost"
+          priv: "{{ db_name}}.*:All "
+```
+
+## Third : Wordpress download and configure
+
+### # vim wp-install.yml
+
+```
+---
+  - name: "Install Wordpress"
+    hosts: all
+    become: yes
+    vars:
+      - db_user: wp-user
+        db_name: wp-db
+        db_password: wp123h
+        domain: adamz.com
+    tasks:
+      - name: "Downloading Wordpress Tar file"
+        get_url:
+          url: https://wordpress.org/wordpress-4.7.8.tar.gz
+          dest: /tmp/wordpress.tar.gz
+          remote_src: true
+      - name: "Extracting tar file"
+        unarchive:
+          src: /tmp/wordpress.tar.gz
+          dest: /tmp/
+          remote_src: yes
+      - name: "Copying to DocRoot"
+        copy:
+          src: /tmp/wordpress/
+          dest: "/var/www/html/{{ domain }}"
+          remote_src: true
+          owner: apache
+          group: apache
+
+
+
+
+      - name: "Genaratigng wp-config"
+        template:
+          src: wp-config.php.tmpl
+          dest: "/var/www/html/{{ domain }}/wp-config.php"
+          owner: apache
+          group: apache
+      - name: "Post installation clear"
+        file:
+          path: "{{ item }}"
+          state: absent
+        with_items:
+          - /tmp/wordpress.tar.gz
+          - /tmp/wordpress
+```
+
+## Execute the playbook one by one
+
+```
+# ansible-playbook -i hosts vhostcreation.yml
+```
